@@ -1,0 +1,798 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>House of Secrets — Daily Rota Board</title>
+<style>
+  :root{
+    --ink:#1B2430;
+    --ink-2:#28334a;
+    --brass:#A6803D;
+    --brass-light:#D8C08A;
+    --parchment:#F3ECDD;
+    --parchment-2:#EAE0C8;
+    --confirmed:#4C6B4F;
+    --reminded:#B08327;
+    --unallocated:#8A3A3A;
+    --ink-text:#241E17;
+    font-size:16px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--parchment);
+    color:var(--ink-text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .header{
+    background:var(--ink);
+    color:var(--parchment);
+    padding:22px 28px 20px;
+    border-bottom:4px solid var(--brass);
+    position:relative;
+    overflow:hidden;
+  }
+  .header::after{
+    content:"";
+    position:absolute;
+    right:-40px; top:-40px;
+    width:160px; height:160px;
+    border:1px solid rgba(216,192,138,0.25);
+    border-radius:50%;
+  }
+  .header::before{
+    content:"";
+    position:absolute;
+    right:10px; top:20px;
+    width:90px; height:90px;
+    border:1px solid rgba(216,192,138,0.18);
+    border-radius:50%;
+  }
+  .eyebrow{
+    font-family:Georgia,"Times New Roman",serif;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+    font-size:.72rem;
+    color:var(--brass-light);
+    margin:0 0 4px;
+  }
+  h1{
+    font-family:Georgia,"Times New Roman",serif;
+    font-weight:400;
+    font-size:1.75rem;
+    margin:0;
+    letter-spacing:.01em;
+  }
+  .header .meta{
+    margin-top:8px;
+    font-size:.88rem;
+    color:var(--brass-light);
+    display:flex;
+    gap:18px;
+    flex-wrap:wrap;
+  }
+  .wrap{
+    max-width:1280px;
+    margin:0 auto;
+    padding:24px 28px 60px;
+  }
+  .panel{
+    background:#fff;
+    border:1px solid var(--parchment-2);
+    border-radius:10px;
+    box-shadow:0 1px 3px rgba(27,36,48,.06);
+  }
+  .paste-panel{
+    padding:18px 20px;
+    margin-bottom:22px;
+  }
+  .paste-panel h2{
+    font-family:Georgia,serif;
+    font-weight:400;
+    font-size:1.05rem;
+    margin:0 0 4px;
+    color:var(--ink);
+  }
+  .paste-panel p{
+    margin:0 0 12px;
+    font-size:.86rem;
+    color:#6b6152;
+  }
+  textarea{
+    width:100%;
+    min-height:110px;
+    resize:vertical;
+    border:1px solid #d8cdb3;
+    border-radius:8px;
+    padding:10px 12px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:.8rem;
+    color:var(--ink-text);
+    background:#fdfbf5;
+  }
+  textarea:focus{outline:2px solid var(--brass); outline-offset:1px;}
+  .row{display:flex; gap:10px; align-items:center; margin-top:12px; flex-wrap:wrap;}
+  button{
+    font-family:inherit;
+    cursor:pointer;
+    border-radius:7px;
+    border:1px solid transparent;
+    padding:9px 16px;
+    font-size:.85rem;
+    font-weight:600;
+  }
+  .btn-primary{background:var(--ink); color:var(--parchment);}
+  .btn-primary:hover{background:var(--ink-2);}
+  .btn-ghost{background:transparent; color:var(--ink); border-color:#d8cdb3;}
+  .btn-ghost:hover{background:var(--parchment-2);}
+
+  .upload-btn{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:linear-gradient(135deg, #C9A544, #8B6914);
+    color:#fff;
+    font-weight:700;
+    font-size:.87rem;
+    padding:11px 20px;
+    border-radius:999px;
+    cursor:pointer;
+    box-shadow:0 2px 6px rgba(139,105,20,.35), 0 0 0 0 rgba(201,165,68,.55);
+    animation:upload-pulse 2.2s ease-in-out infinite;
+    transition:transform .15s ease, box-shadow .15s ease, background .25s ease;
+    user-select:none;
+  }
+  .upload-btn:hover{
+    transform:translateY(-1px) scale(1.02);
+    box-shadow:0 4px 10px rgba(139,105,20,.45);
+  }
+  .upload-btn:active{transform:translateY(0) scale(.99);}
+  .upload-icon{display:inline-flex; line-height:0;}
+  @keyframes upload-pulse{
+    0%{ box-shadow:0 2px 6px rgba(139,105,20,.35), 0 0 0 0 rgba(201,165,68,.5); }
+    70%{ box-shadow:0 2px 6px rgba(139,105,20,.35), 0 0 0 9px rgba(201,165,68,0); }
+    100%{ box-shadow:0 2px 6px rgba(139,105,20,.35), 0 0 0 0 rgba(201,165,68,0); }
+  }
+  .upload-btn.is-loading{
+    animation:none;
+    background:linear-gradient(135deg, #C9A544, #8B6914);
+    opacity:.75;
+    cursor:wait;
+  }
+  .upload-btn.uploaded{
+    animation:none;
+    background:#e4ded0;
+    color:#8a7f6a;
+    box-shadow:none;
+    font-weight:600;
+  }
+  .upload-btn.uploaded:hover{
+    transform:none;
+    box-shadow:0 0 0 1px #d8cdb3 inset;
+  }
+  .upload-btn.uploaded .upload-icon{color:#8a9c7e;}
+  .parse-msg{font-size:.82rem; color:var(--confirmed); font-weight:600;}
+  .parse-msg.err{color:var(--unallocated);}
+  .board{
+    display:grid;
+    grid-template-columns:minmax(320px,1fr) minmax(360px,1.3fr);
+    gap:22px;
+  }
+  @media (max-width:920px){
+    .board{grid-template-columns:1fr;}
+  }
+  .col-title{
+    font-family:Georgia,serif;
+    font-size:1rem;
+    color:var(--ink);
+    margin:0 0 12px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+  .col-title .count{
+    font-family:-apple-system,sans-serif;
+    font-size:.72rem;
+    color:#8a7f6a;
+    font-weight:600;
+  }
+  .shift-list{padding:16px; max-height:none;}
+  .shift-row{
+    display:grid;
+    grid-template-columns:auto 1fr auto;
+    gap:10px;
+    align-items:center;
+    padding:10px 8px;
+    border-bottom:1px solid #f0e9d8;
+  }
+  .shift-row:last-child{border-bottom:none;}
+  .status-dot{
+    width:9px;height:9px;border-radius:50%;
+    flex-shrink:0;
+  }
+  .dot-confirmed{background:var(--confirmed);}
+  .dot-reminded{background:var(--reminded);}
+  .dot-unallocated{background:var(--unallocated); border:1px solid var(--unallocated);}
+  .shift-info{min-width:0;}
+  .shift-name{font-weight:600; font-size:.9rem; color:var(--ink-text);}
+  .shift-name.empty{color:#a89b7f; font-style:italic; font-weight:500;}
+  .shift-sub{font-size:.76rem; color:#8a7f6a; margin-top:1px;}
+  .shift-note{font-size:.74rem; color:#a6825a; margin-top:2px; font-style:italic;}
+  select.loc-select{
+    font-family:inherit;
+    font-size:.8rem;
+    padding:6px 8px;
+    border-radius:6px;
+    border:1px solid #d8cdb3;
+    background:#fdfbf5;
+    color:var(--ink-text);
+    min-width:132px;
+  }
+  select.loc-select.placed{
+    border-color:var(--brass);
+    background:#fbf4e2;
+    font-weight:600;
+  }
+  .locations-grid{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:14px;
+  }
+  @media (max-width:520px){
+    .locations-grid{grid-template-columns:1fr;}
+  }
+  .loc-card{
+    padding:14px 15px 16px;
+  }
+  .loc-name{
+    font-family:Georgia,serif;
+    font-size:.95rem;
+    color:var(--ink);
+    margin:0 0 10px;
+    padding-bottom:8px;
+    border-bottom:2px solid var(--brass-light);
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+  }
+  .loc-name .n{font-size:.7rem; color:#a6803d; font-weight:700;}
+  .loc-empty{font-size:.78rem; color:#b0a488; font-style:italic;}
+  .loc-coverage{display:flex; gap:6px; margin-bottom:10px;}
+  .cov-badge{
+    font-size:.7rem;
+    font-weight:700;
+    letter-spacing:.03em;
+    padding:3px 8px;
+    border-radius:20px;
+  }
+  .cov-ok{background:#e4ebe1; color:var(--confirmed);}
+  .cov-gap{background:#f3e2e2; color:var(--unallocated);}
+  .loc-session-heading{
+    font-size:.68rem;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:#a6803d;
+    margin:10px 0 6px;
+  }
+  .loc-session-heading:first-of-type{margin-top:0;}
+  .loc-add{margin-bottom:12px;}
+  select.loc-add-select{
+    width:100%;
+    font-family:inherit;
+    font-size:.8rem;
+    padding:7px 8px;
+    border-radius:6px;
+    border:1px dashed #c7b78a;
+    background:#fdfbf5;
+    color:var(--ink-text);
+  }
+  select.loc-add-select:disabled{color:#b0a488; border-style:solid; background:#f7f2e6;}
+  .loc-person{
+    font-size:.83rem;
+    margin-bottom:7px;
+    line-height:1.35;
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:8px;
+  }
+  .loc-person b{color:var(--ink-text);}
+  .loc-person span{color:#8a7f6a; font-size:.76rem;}
+  .loc-remove{
+    background:transparent;
+    border:none;
+    color:#b0a488;
+    font-size:1rem;
+    line-height:1;
+    padding:0 2px;
+    font-weight:400;
+    flex-shrink:0;
+  }
+  .loc-remove:hover{color:var(--unallocated);}
+  .footer-actions{
+    margin-top:24px;
+    display:flex;
+    gap:10px;
+  }
+  @media print{
+    .paste-panel, .footer-actions, .header::before, .header::after, .loc-add, .loc-remove, .shift-col{display:none;}
+    .header{background:#fff !important; color:#000 !important; border-bottom:2px solid #000;}
+    .eyebrow, h1, .meta{color:#000 !important;}
+    .board{grid-template-columns:1fr;}
+    .locations-grid{grid-template-columns:1fr 1fr;}
+    .loc-card{break-inside:avoid;}
+    body{background:#fff;}
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <p class="eyebrow">Trent Park House of Secrets</p>
+  <h1>Daily Rota Board</h1>
+  <div class="meta">
+    <span id="metaDate">No rota loaded yet</span>
+    <span id="metaCount"></span>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="panel paste-panel">
+    <h2>Load today's rota</h2>
+    <p>Upload the PDF export directly, or paste the text if you've already copied it out. Either way, re-loading any time refreshes the shift list without losing existing placements where a shift matches.</p>
+    <div class="row" style="margin-top:0;">
+      <label id="uploadLabel" class="upload-btn" for="pdfInput">
+        <span id="uploadIcon" class="upload-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+        </span>
+        <span id="uploadLabelText">Upload rota PDF</span>
+      </label>
+      <input id="pdfInput" type="file" accept="application/pdf" style="display:none;" onchange="handlePdfUpload(event)">
+      <span id="pdfMsg" class="parse-msg"></span>
+    </div>
+    <p style="margin:14px 0 6px; font-size:.8rem; color:#8a7f6a;">— or paste the text —</p>
+    <textarea id="pasteBox" placeholder="Paste the rota text here…"></textarea>
+    <div class="row">
+      <button class="btn-primary" onclick="handleParse()">Parse rota</button>
+      <button class="btn-ghost" onclick="clearAll()">Clear everything</button>
+      <span id="parseMsg" class="parse-msg"></span>
+    </div>
+    <div class="row" style="margin-top:16px; align-items:flex-start;">
+      <div style="flex:1; min-width:220px;">
+        <label style="font-size:.76rem; font-weight:600; color:#8a7f6a; display:block; margin-bottom:4px;">Role labels used in your rota (comma-separated — only change this if a new role type turns up)</label>
+        <input id="roleList" type="text" value="Room Steward, Shop/Tickets, Duty Manager"
+          style="width:100%; font-size:.82rem; padding:8px 10px; border:1px solid #d8cdb3; border-radius:6px; background:#fdfbf5; color:var(--ink-text); font-family:inherit;">
+      </div>
+    </div>
+  </div>
+
+  <div class="board">
+    <div class="shift-col">
+      <p class="col-title">Today's shifts <span class="count" id="shiftCount"></span></p>
+      <div class="panel shift-list" id="shiftList">
+        <p style="color:#a89b7f; font-style:italic; font-size:.85rem; padding:6px;">Paste and parse a rota above to see shifts here.</p>
+      </div>
+    </div>
+    <div>
+      <p class="col-title">Where everyone's placed</p>
+      <div class="locations-grid" id="locationsGrid"></div>
+    </div>
+  </div>
+
+  <div class="footer-actions">
+    <button class="btn-primary" onclick="window.print()">Print allocation sheet</button>
+  </div>
+
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script>
+pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+</script>
+<script>
+const LOCATIONS = ["Shop","Meet & Greet","Corridor","Salon","Library","M Room","Basement"];
+let shifts = [];      // {id, role, start, end, name, status, note}
+let placements = {};  // shiftId -> location
+
+function shiftKey(s){ return [s.role,s.start,s.end,s.name].join('|'); }
+function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+function sessionOf(s){
+  const hour = parseInt(s.start.split(':')[0], 10);
+  return hour < 13 ? 'Morning' : 'Afternoon';
+}
+
+function parseRotaText(raw, roleListRaw){
+  let text = raw.replace(/\r/g,'');
+
+  // pull off event date / name if present
+  let dateMatch = text.match(/Event Date:\s*([0-9\/]+)/i);
+  let nameMatch = text.match(/Event Name:\s*([^\n]*?)(?=Note:|Role\s+Location|$)/i);
+  let eventDate = dateMatch ? dateMatch[1].trim() : null;
+  let eventName = nameMatch ? nameMatch[1].trim() : null;
+
+  // strip everything up to and including the "Status Note" table header,
+  // wherever it lands relative to the surrounding text
+  let dataText = text.replace(/^[\s\S]*?Status\s*Note/i, '').trim();
+  if(!dataText){
+    // fall back: maybe there was no header at all, just rows
+    dataText = text.trim();
+  }
+
+  // Roles are matched against a known whitelist rather than free-form text,
+  // because the PDF export glues each row directly onto the next with no
+  // separator (e.g. "...ConfirmedRoom Steward 13:15..."), so there's no
+  // reliable delimiter to detect a role boundary generically.
+  const roles = roleListRaw.split(',').map(r => r.trim()).filter(Boolean)
+    .sort((a,b) => b.length - a.length); // longest first so e.g. "Room Steward" wins over a shorter overlapping label
+  if(!roles.length){
+    return { results: [], eventDate, eventName, error: 'no-roles' };
+  }
+  const alt = roles.map(escapeRegex).join('|');
+  const recordRe = new RegExp('(' + alt + ')\\s*(\\d{1,2}:\\d{2})\\s+(\\d{1,2}:\\d{2})\\s*([\\s\\S]*?)(?=(?:' + alt + ')\\s*\\d{1,2}:\\d{2}|$)', 'g');
+  const statusRe = /(Confirmed|Reminded|Accepted|Declined|Cancelled|Unallocated)/i;
+
+  let results = [];
+  let m;
+  let idx = 0;
+  while((m = recordRe.exec(dataText)) !== null){
+    let role = m[1].trim().replace(/\s+/g,' ');
+    let start = m[2];
+    let end = m[3];
+    let rest = m[4].trim();
+    if(!role){ if(m.index === recordRe.lastIndex) recordRe.lastIndex++; continue; }
+
+    let name = '', status = '', note = '';
+    let sm = rest.match(statusRe);
+    if(sm){
+      name = rest.slice(0, sm.index).trim();
+      status = sm[1];
+      note = rest.slice(sm.index + sm[1].length).trim();
+    } else {
+      name = rest;
+    }
+    if(!name || /^unallocated$/i.test(name)){
+      name = '';
+      if(!status) status = 'Unallocated';
+    }
+
+    results.push({
+      id: 's' + (idx++),
+      role, start, end,
+      name: name || '',
+      status: status || (name ? 'Confirmed' : 'Unallocated'),
+      note
+    });
+    if(m.index === recordRe.lastIndex) recordRe.lastIndex++;
+  }
+
+  results.sort((a,b) => a.start.localeCompare(b.start) || a.role.localeCompare(b.role));
+  return { results, eventDate, eventName };
+}
+
+const uploadIcons = {
+  arrow: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12"/><path d="M7 8l5-5 5 5"/><path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>',
+  check: '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6L9 17l-5-5"/></svg>'
+};
+
+async function handlePdfUpload(event){
+  const file = event.target.files && event.target.files[0];
+  const msgEl = document.getElementById('pdfMsg');
+  const label = document.getElementById('uploadLabel');
+  const icon = document.getElementById('uploadIcon');
+  const text = document.getElementById('uploadLabelText');
+  if(!file) return;
+
+  label.classList.remove('uploaded');
+  label.classList.add('is-loading');
+  icon.innerHTML = uploadIcons.arrow;
+  text.textContent = 'Reading…';
+  msgEl.classList.remove('err');
+  msgEl.textContent = '';
+
+  try{
+    const buf = await file.arrayBuffer();
+    const pdf = await pdfjsLib.getDocument({ data: buf }).promise;
+    let fullText = '';
+    for(let pageNum = 1; pageNum <= pdf.numPages; pageNum++){
+      const page = await pdf.getPage(pageNum);
+      const content = await page.getTextContent();
+      let pageText = '';
+      content.items.forEach(item => {
+        pageText += item.str;
+        if(item.hasEOL) pageText += '\n';
+      });
+      fullText += pageText + '\n';
+    }
+    document.getElementById('pasteBox').value = fullText.trim();
+    handleParse();
+
+    label.classList.remove('is-loading');
+    label.classList.add('uploaded');
+    icon.innerHTML = uploadIcons.check;
+    text.textContent = 'Loaded: ' + file.name;
+    msgEl.textContent = '';
+  }catch(e){
+    label.classList.remove('is-loading', 'uploaded');
+    icon.innerHTML = uploadIcons.arrow;
+    text.textContent = 'Upload rota PDF';
+    msgEl.textContent = 'Could not read that PDF — try pasting the text instead.';
+    msgEl.classList.add('err');
+  }
+  event.target.value = '';
+}
+
+function handleParse(){
+  const raw = document.getElementById('pasteBox').value;
+  const msgEl = document.getElementById('parseMsg');
+  if(!raw.trim()){
+    msgEl.textContent = 'Paste some rota text first.';
+    msgEl.classList.add('err');
+    return;
+  }
+  const roleListRaw = document.getElementById('roleList').value;
+  let parsed;
+  try{
+    parsed = parseRotaText(raw, roleListRaw);
+  }catch(e){
+    msgEl.textContent = 'Could not parse that text — check the format and try again.';
+    msgEl.classList.add('err');
+    return;
+  }
+  if(parsed.error === 'no-roles'){
+    msgEl.textContent = 'Add at least one role label above before parsing.';
+    msgEl.classList.add('err');
+    return;
+  }
+  if(!parsed.results.length){
+    msgEl.textContent = 'No shifts found — check the role labels above match what\'s in the pasted text.';
+    msgEl.classList.add('err');
+    return;
+  }
+
+  // preserve existing placements where the same shift (role+time+name) still exists
+  const oldPlacements = placements;
+  const oldByKey = {};
+  shifts.forEach(s => { if(oldPlacements[s.id]) oldByKey[shiftKey(s)] = oldPlacements[s.id]; });
+
+  shifts = parsed.results;
+  placements = {};
+  shifts.forEach(s => {
+    const k = shiftKey(s);
+    if(oldByKey[k]) placements[s.id] = oldByKey[k];
+  });
+
+  msgEl.classList.remove('err');
+  msgEl.textContent = 'Parsed ' + shifts.length + ' shift' + (shifts.length===1?'':'s') + '.';
+
+  const metaDate = document.getElementById('metaDate');
+  metaDate.textContent = (parsed.eventDate ? parsed.eventDate : 'Date not found') +
+    (parsed.eventName ? ' · ' + parsed.eventName : '');
+
+  render();
+  loadSavedPlacements(parsed.eventDate);
+}
+
+function clearAll(){
+  document.getElementById('pasteBox').value = '';
+  shifts = [];
+  placements = {};
+  document.getElementById('metaDate').textContent = 'No rota loaded yet';
+  document.getElementById('metaCount').textContent = '';
+  document.getElementById('parseMsg').textContent = '';
+  document.getElementById('parseMsg').classList.remove('err');
+  document.getElementById('shiftList').innerHTML = '<p style="color:#a89b7f; font-style:italic; font-size:.85rem; padding:6px;">Paste and parse a rota above to see shifts here.</p>';
+  document.getElementById('shiftCount').textContent = '';
+  document.getElementById('locationsGrid').innerHTML = '';
+  const label = document.getElementById('uploadLabel');
+  label.classList.remove('uploaded', 'is-loading');
+  document.getElementById('uploadIcon').innerHTML = uploadIcons.arrow;
+  document.getElementById('uploadLabelText').textContent = 'Upload rota PDF';
+  document.getElementById('pdfMsg').textContent = '';
+}
+
+function statusDotClass(status){
+  if(/confirmed/i.test(status)) return 'dot-confirmed';
+  if(/reminded|accepted/i.test(status)) return 'dot-reminded';
+  return 'dot-unallocated';
+}
+
+function assign(shiftId, loc){
+  if(loc){
+    placements[shiftId] = loc;
+  } else {
+    delete placements[shiftId];
+  }
+  render();
+  savePlacements();
+}
+
+function render(){
+  document.getElementById('shiftCount').textContent = '(' + shifts.length + ')';
+  document.getElementById('metaCount').textContent = shifts.length + ' shift' + (shifts.length===1?'':'s') + ' today';
+
+  const listEl = document.getElementById('shiftList');
+  listEl.innerHTML = '';
+  shifts.forEach(s => {
+    const row = document.createElement('div');
+    row.className = 'shift-row';
+
+    const dot = document.createElement('div');
+    dot.className = 'status-dot ' + statusDotClass(s.status);
+
+    const info = document.createElement('div');
+    info.className = 'shift-info';
+    const nameEl = document.createElement('div');
+    nameEl.className = 'shift-name' + (s.name ? '' : ' empty');
+    nameEl.textContent = s.name || 'Unfilled';
+    const sub = document.createElement('div');
+    sub.className = 'shift-sub';
+    sub.textContent = s.role + ' · ' + s.start + '–' + s.end + ' · ' + s.status;
+    info.appendChild(nameEl);
+    info.appendChild(sub);
+    if(s.note){
+      const noteEl = document.createElement('div');
+      noteEl.className = 'shift-note';
+      noteEl.textContent = s.note;
+      info.appendChild(noteEl);
+    }
+
+    const sel = document.createElement('select');
+    sel.className = 'loc-select';
+    const optNone = document.createElement('option');
+    optNone.value = '';
+    optNone.textContent = 'Unplaced';
+    sel.appendChild(optNone);
+    LOCATIONS.forEach(loc => {
+      const opt = document.createElement('option');
+      opt.value = loc;
+      opt.textContent = loc;
+      if(placements[s.id] === loc) opt.selected = true;
+      sel.appendChild(opt);
+    });
+    if(placements[s.id]) sel.classList.add('placed');
+    sel.addEventListener('change', () => {
+      sel.classList.toggle('placed', !!sel.value);
+      assign(s.id, sel.value);
+    });
+
+    row.appendChild(dot);
+    row.appendChild(info);
+    row.appendChild(sel);
+    listEl.appendChild(row);
+  });
+
+  renderLocations();
+}
+
+function renderLocations(){
+  const grid = document.getElementById('locationsGrid');
+  grid.innerHTML = '';
+
+  // "available" = has a name and isn't already sitting in this location
+  const availableFor = (loc) => shifts
+    .filter(s => s.name && placements[s.id] !== loc)
+    .sort((a,b) => a.start.localeCompare(b.start));
+
+  LOCATIONS.forEach(loc => {
+    const card = document.createElement('div');
+    card.className = 'panel loc-card';
+
+    const people = shifts.filter(s => placements[s.id] === loc);
+
+    const title = document.createElement('p');
+    title.className = 'loc-name';
+    const span = document.createElement('span');
+    span.textContent = loc;
+    const n = document.createElement('span');
+    n.className = 'n';
+    n.textContent = people.length ? people.length : '';
+    title.appendChild(span);
+    title.appendChild(n);
+    card.appendChild(title);
+
+    // coverage badges — has this location got someone in each session?
+    const amPeople = people.filter(p => sessionOf(p) === 'Morning');
+    const pmPeople = people.filter(p => sessionOf(p) === 'Afternoon');
+    const coverage = document.createElement('div');
+    coverage.className = 'loc-coverage';
+    ['Morning','Afternoon'].forEach(sessionName => {
+      const covered = sessionName === 'Morning' ? amPeople.length : pmPeople.length;
+      const badge = document.createElement('span');
+      badge.className = 'cov-badge ' + (covered ? 'cov-ok' : 'cov-gap');
+      badge.textContent = (sessionName === 'Morning' ? 'AM' : 'PM') + (covered ? ' \u2713' : ' \u2014');
+      coverage.appendChild(badge);
+    });
+    card.appendChild(coverage);
+
+    // add-person dropdown, listing everyone not already placed here
+    const addWrap = document.createElement('div');
+    addWrap.className = 'loc-add';
+    const addSel = document.createElement('select');
+    addSel.className = 'loc-add-select';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = '+ Add someone…';
+    addSel.appendChild(placeholder);
+    const avail = availableFor(loc);
+    avail.forEach(s => {
+      const opt = document.createElement('option');
+      opt.value = s.id;
+      const placedElsewhere = placements[s.id] ? ' (currently ' + placements[s.id] + ')' : '';
+      opt.textContent = s.name + ' · ' + s.start + '–' + s.end + ' · ' + s.role + placedElsewhere;
+      addSel.appendChild(opt);
+    });
+    addSel.disabled = !avail.length;
+    if(!avail.length) placeholder.textContent = 'Everyone placed here already';
+    addSel.addEventListener('change', () => {
+      if(addSel.value) assign(addSel.value, loc);
+    });
+    addWrap.appendChild(addSel);
+    card.appendChild(addWrap);
+
+    if(!people.length){
+      const empty = document.createElement('p');
+      empty.className = 'loc-empty';
+      empty.textContent = 'Nobody placed here yet.';
+      card.appendChild(empty);
+    } else {
+      [['Morning', amPeople], ['Afternoon', pmPeople]].forEach(([sessionName, group]) => {
+        if(!group.length) return;
+        const sh = document.createElement('p');
+        sh.className = 'loc-session-heading';
+        sh.textContent = sessionName;
+        card.appendChild(sh);
+        group.sort((a,b) => a.start.localeCompare(b.start));
+        group.forEach(p => {
+          const row = document.createElement('div');
+          row.className = 'loc-person';
+          const info = document.createElement('div');
+          info.innerHTML = '<b>' + (p.name || 'Unfilled') + '</b><br><span>' + p.start + '–' + p.end + ' · ' + p.role + '</span>';
+          const remove = document.createElement('button');
+          remove.className = 'loc-remove';
+          remove.type = 'button';
+          remove.title = 'Remove from ' + loc;
+          remove.textContent = '×';
+          remove.addEventListener('click', () => assign(p.id, ''));
+          row.appendChild(info);
+          row.appendChild(remove);
+          card.appendChild(row);
+        });
+      });
+    }
+    grid.appendChild(card);
+  });
+}
+
+async function savePlacements(){
+  if(!window.storage) return;
+  const dateEl = document.getElementById('metaDate').textContent;
+  const key = 'placements:' + dateEl;
+  try{
+    await window.storage.set(key, JSON.stringify(placements), false);
+  }catch(e){ /* best-effort, ignore */ }
+}
+
+async function loadSavedPlacements(eventDate){
+  if(!window.storage || !eventDate) return;
+  const dateEl = document.getElementById('metaDate').textContent;
+  const key = 'placements:' + dateEl;
+  try{
+    const result = await window.storage.get(key, false);
+    if(result && result.value){
+      const saved = JSON.parse(result.value);
+      // only keep placements that still match a current shift id
+      const validIds = new Set(shifts.map(s => s.id));
+      Object.keys(saved).forEach(id => {
+        if(validIds.has(id)) placements[id] = saved[id];
+      });
+      render();
+    }
+  }catch(e){ /* no saved data for this date, that's fine */ }
+}
+</script>
+
+</body>
+</html>
