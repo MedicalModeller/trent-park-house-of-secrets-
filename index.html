@@ -723,9 +723,12 @@ function renderLocations(){
     const amPeople = people.filter(p => sessionOf(p) === 'Morning');
     const pmPeople = people.filter(p => sessionOf(p) === 'Afternoon');
 
-    // one add-dropdown per session, filtered to shifts that genuinely overlap that session
+    // one add-dropdown per session, filtered to shifts that are still unallocated
+    // and genuinely overlap that session — once someone's placed anywhere, they
+    // drop out of every location's dropdown (use the shift-list select on the
+    // left, or the × next to their name, to move or unassign them)
     const availableFor = (sessionName) => shifts
-      .filter(s => s.name && onSiteFor(s, sessionName) && placements[s.id] !== loc)
+      .filter(s => s.name && onSiteFor(s, sessionName) && !placements[s.id])
       .sort((a,b) => a.start.localeCompare(b.start));
 
     [['Morning','AM',amPeople], ['Afternoon','PM',pmPeople]].forEach(([sessionName, shortLabel, group]) => {
@@ -775,12 +778,11 @@ function renderLocations(){
       avail.forEach(s => {
         const opt = document.createElement('option');
         opt.value = s.id;
-        const placedElsewhere = placements[s.id] ? ' (currently ' + placements[s.id] + ')' : '';
-        opt.textContent = s.name + ' · ' + s.start + '–' + s.end + ' · ' + s.role + placedElsewhere;
+        opt.textContent = s.name + ' · ' + s.start + '–' + s.end + ' · ' + s.role;
         addSel.appendChild(opt);
       });
       addSel.disabled = !avail.length;
-      if(!avail.length) placeholder.textContent = 'Everyone ' + shortLabel + ' placed already';
+      if(!avail.length) placeholder.textContent = 'Everyone ' + shortLabel + ' allocated already';
       addSel.addEventListener('change', () => {
         if(addSel.value) assign(addSel.value, loc);
       });
