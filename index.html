@@ -258,7 +258,17 @@
   }
   .loc-name .n{font-size:.7rem; color:#a6803d; font-weight:700;}
   .loc-empty{font-size:.78rem; color:#b0a488; font-style:italic;}
-  .loc-coverage{display:flex; gap:6px; margin-bottom:10px;}
+  .loc-session{
+    padding:10px 0 12px;
+    border-top:1px solid #f0e9d8;
+  }
+  .loc-session:first-of-type{border-top:none; padding-top:0;}
+  .loc-session-header{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    margin-bottom:8px;
+  }
   .cov-badge{
     font-size:.7rem;
     font-weight:700;
@@ -274,10 +284,8 @@
     letter-spacing:.06em;
     text-transform:uppercase;
     color:#a6803d;
-    margin:10px 0 6px;
   }
-  .loc-session-heading:first-of-type{margin-top:0;}
-  .loc-add{margin-bottom:12px;}
+  .loc-add{margin-top:8px;}
   select.loc-add-select{
     width:100%;
     font-family:inherit;
@@ -360,10 +368,15 @@
       <button class="btn-ghost" onclick="clearAll()">Clear everything</button>
       <span id="parseMsg" class="parse-msg"></span>
     </div>
-    <div class="row" style="margin-top:16px; align-items:flex-start;">
+    <div class="row" style="margin-top:16px; align-items:flex-start; gap:16px; flex-wrap:wrap;">
       <div style="flex:1; min-width:220px;">
         <label style="font-size:.76rem; font-weight:600; color:#8a7f6a; display:block; margin-bottom:4px;">Role labels used in your rota (comma-separated — only change this if a new role type turns up)</label>
         <input id="roleList" type="text" value="Room Steward, Shop/Tickets, Duty Manager"
+          style="width:100%; font-size:.82rem; padding:8px 10px; border:1px solid #d8cdb3; border-radius:6px; background:#fdfbf5; color:var(--ink-text); font-family:inherit;">
+      </div>
+      <div style="flex:1; min-width:220px;">
+        <label style="font-size:.76rem; font-weight:600; color:#8a7f6a; display:block; margin-bottom:4px;">Roles to leave off the board (comma-separated — recognised for parsing but not shown or assignable)</label>
+        <input id="excludeRoleList" type="text" value="Duty Manager"
           style="width:100%; font-size:.82rem; padding:8px 10px; border:1px solid #d8cdb3; border-radius:6px; background:#fdfbf5; color:var(--ink-text); font-family:inherit;">
       </div>
     </div>
@@ -402,6 +415,19 @@ function escapeRegex(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
 function sessionOf(s){
   const hour = parseInt(s.start.split(':')[0], 10);
   return hour < 13 ? 'Morning' : 'Afternoon';
+}
+function toMinutes(t){
+  const [h,m] = t.split(':').map(Number);
+  return h*60 + m;
+}
+// A shift is "on site" for a session if it genuinely overlaps that half of the
+// day, not just the 15-minute handover — e.g. a 9:00-18:00 shift counts for
+// both AM and PM, but a 9:45-13:30 shift only counts for AM (it doesn't
+// really cover the afternoon just because it runs 30 mins past 13:00).
+function onSiteFor(s, sessionName){
+  const start = toMinutes(s.start), end = toMinutes(s.end);
+  if(sessionName === 'Morning') return start < 13*60;
+  return end > 13*60 + 30;
 }
 
 function parseRotaText(raw, roleListRaw){
@@ -533,6 +559,7 @@ function handleParse(){
     return;
   }
   const roleListRaw = document.getElementById('roleList').value;
+  const excludeRolesRaw = document.getElementById('excludeRoleList').value;
   let parsed;
   try{
     parsed = parseRotaText(raw, roleListRaw);
@@ -551,6 +578,10 @@ function handleParse(){
     msgEl.classList.add('err');
     return;
   }
+
+  // roles are still parsed (needed for correct row boundaries) but dropped here before display
+  const excludeRoles = excludeRolesRaw.split(',').map(r => r.trim().toLowerCase()).filter(Boolean);
+  parsed.results = parsed.results.filter(r => !excludeRoles.includes(r.role.toLowerCase()));
 
   // preserve existing placements where the same shift (role+time+name) still exists
   const oldPlacements = placements;
@@ -671,11 +702,6 @@ function renderLocations(){
   const grid = document.getElementById('locationsGrid');
   grid.innerHTML = '';
 
-  // "available" = has a name and isn't already sitting in this location
-  const availableFor = (loc) => shifts
-    .filter(s => s.name && placements[s.id] !== loc)
-    .sort((a,b) => a.start.localeCompare(b.start));
-
   LOCATIONS.forEach(loc => {
     const card = document.createElement('div');
     card.className = 'panel loc-card';
@@ -696,71 +722,80 @@ function renderLocations(){
     // coverage badges — has this location got someone in each session?
     const amPeople = people.filter(p => sessionOf(p) === 'Morning');
     const pmPeople = people.filter(p => sessionOf(p) === 'Afternoon');
-    const coverage = document.createElement('div');
-    coverage.className = 'loc-coverage';
-    ['Morning','Afternoon'].forEach(sessionName => {
-      const covered = sessionName === 'Morning' ? amPeople.length : pmPeople.length;
-      const badge = document.createElement('span');
-      badge.className = 'cov-badge ' + (covered ? 'cov-ok' : 'cov-gap');
-      badge.textContent = (sessionName === 'Morning' ? 'AM' : 'PM') + (covered ? ' \u2713' : ' \u2014');
-      coverage.appendChild(badge);
-    });
-    card.appendChild(coverage);
 
-    // add-person dropdown, listing everyone not already placed here
-    const addWrap = document.createElement('div');
-    addWrap.className = 'loc-add';
-    const addSel = document.createElement('select');
-    addSel.className = 'loc-add-select';
-    const placeholder = document.createElement('option');
-    placeholder.value = '';
-    placeholder.textContent = '+ Add someone…';
-    addSel.appendChild(placeholder);
-    const avail = availableFor(loc);
-    avail.forEach(s => {
-      const opt = document.createElement('option');
-      opt.value = s.id;
-      const placedElsewhere = placements[s.id] ? ' (currently ' + placements[s.id] + ')' : '';
-      opt.textContent = s.name + ' · ' + s.start + '–' + s.end + ' · ' + s.role + placedElsewhere;
-      addSel.appendChild(opt);
+    // one add-dropdown per session, filtered to shifts that genuinely overlap that session
+    const availableFor = (sessionName) => shifts
+      .filter(s => s.name && onSiteFor(s, sessionName) && placements[s.id] !== loc)
+      .sort((a,b) => a.start.localeCompare(b.start));
+
+    [['Morning','AM',amPeople], ['Afternoon','PM',pmPeople]].forEach(([sessionName, shortLabel, group]) => {
+      const sessionBlock = document.createElement('div');
+      sessionBlock.className = 'loc-session';
+
+      const sh = document.createElement('div');
+      sh.className = 'loc-session-header';
+      const shLabel = document.createElement('span');
+      shLabel.className = 'loc-session-heading';
+      shLabel.textContent = sessionName;
+      const badge = document.createElement('span');
+      badge.className = 'cov-badge ' + (group.length ? 'cov-ok' : 'cov-gap');
+      badge.textContent = shortLabel + (group.length ? ' \u2713' : ' \u2014');
+      sh.appendChild(shLabel);
+      sh.appendChild(badge);
+      sessionBlock.appendChild(sh);
+
+      // people already placed in this session
+      group.sort((a,b) => a.start.localeCompare(b.start));
+      group.forEach(p => {
+        const row = document.createElement('div');
+        row.className = 'loc-person';
+        const info = document.createElement('div');
+        info.innerHTML = '<b>' + (p.name || 'Unfilled') + '</b><br><span>' + p.start + '–' + p.end + ' · ' + p.role + '</span>';
+        const remove = document.createElement('button');
+        remove.className = 'loc-remove';
+        remove.type = 'button';
+        remove.title = 'Remove from ' + loc;
+        remove.textContent = '×';
+        remove.addEventListener('click', () => assign(p.id, ''));
+        row.appendChild(info);
+        row.appendChild(remove);
+        sessionBlock.appendChild(row);
+      });
+
+      // this session's own add-dropdown
+      const addWrap = document.createElement('div');
+      addWrap.className = 'loc-add';
+      const addSel = document.createElement('select');
+      addSel.className = 'loc-add-select';
+      const placeholder = document.createElement('option');
+      placeholder.value = '';
+      placeholder.textContent = '+ Add ' + shortLabel + ' someone…';
+      addSel.appendChild(placeholder);
+      const avail = availableFor(sessionName);
+      avail.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id;
+        const placedElsewhere = placements[s.id] ? ' (currently ' + placements[s.id] + ')' : '';
+        opt.textContent = s.name + ' · ' + s.start + '–' + s.end + ' · ' + s.role + placedElsewhere;
+        addSel.appendChild(opt);
+      });
+      addSel.disabled = !avail.length;
+      if(!avail.length) placeholder.textContent = 'Everyone ' + shortLabel + ' placed already';
+      addSel.addEventListener('change', () => {
+        if(addSel.value) assign(addSel.value, loc);
+      });
+      addWrap.appendChild(addSel);
+      sessionBlock.appendChild(addWrap);
+
+      card.appendChild(sessionBlock);
     });
-    addSel.disabled = !avail.length;
-    if(!avail.length) placeholder.textContent = 'Everyone placed here already';
-    addSel.addEventListener('change', () => {
-      if(addSel.value) assign(addSel.value, loc);
-    });
-    addWrap.appendChild(addSel);
-    card.appendChild(addWrap);
 
     if(!people.length){
       const empty = document.createElement('p');
       empty.className = 'loc-empty';
+      empty.style.marginTop = '2px';
       empty.textContent = 'Nobody placed here yet.';
       card.appendChild(empty);
-    } else {
-      [['Morning', amPeople], ['Afternoon', pmPeople]].forEach(([sessionName, group]) => {
-        if(!group.length) return;
-        const sh = document.createElement('p');
-        sh.className = 'loc-session-heading';
-        sh.textContent = sessionName;
-        card.appendChild(sh);
-        group.sort((a,b) => a.start.localeCompare(b.start));
-        group.forEach(p => {
-          const row = document.createElement('div');
-          row.className = 'loc-person';
-          const info = document.createElement('div');
-          info.innerHTML = '<b>' + (p.name || 'Unfilled') + '</b><br><span>' + p.start + '–' + p.end + ' · ' + p.role + '</span>';
-          const remove = document.createElement('button');
-          remove.className = 'loc-remove';
-          remove.type = 'button';
-          remove.title = 'Remove from ' + loc;
-          remove.textContent = '×';
-          remove.addEventListener('click', () => assign(p.id, ''));
-          row.appendChild(info);
-          row.appendChild(remove);
-          card.appendChild(row);
-        });
-      });
     }
     grid.appendChild(card);
   });
