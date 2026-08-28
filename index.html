@@ -614,7 +614,7 @@ function handleParse(){
   metaDate.textContent = (parsed.eventDate ? parsed.eventDate : 'Date not found') +
     (parsed.eventName ? ' · ' + parsed.eventName : '');
   document.getElementById('shiftsHeading').textContent =
-    (parsed.eventDate ? 'Day ' + toShortDate(parsed.eventDate) + ' shifts' : "Today's shifts");
+    (parsed.eventDate ? weekdayOf(parsed.eventDate) + ' ' + toShortDate(parsed.eventDate) + ' shifts' : "Today's shifts");
 
   // flag if the sheet's own date isn't today — likely an old PDF re-uploaded by mistake
   const dateWarnEl = document.getElementById('dateWarning');
@@ -642,6 +642,16 @@ function toShortDate(d){
   const parts = d.split('/');
   if(parts.length !== 3) return d;
   return parts[0] + '/' + parts[1] + '/' + parts[2].slice(-2);
+}
+
+// works out the weekday name from the sheet's own dd/mm/yyyy Event Date
+function weekdayOf(d){
+  const parts = d.split('/');
+  if(parts.length !== 3) return '';
+  const day = parseInt(parts[0], 10), month = parseInt(parts[1], 10), year = parseInt(parts[2], 10);
+  const dt = new Date(year, month - 1, day);
+  const names = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  return names[dt.getDay()];
 }
 
 function clearAll(){
