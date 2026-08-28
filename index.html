@@ -344,6 +344,18 @@
     .loc-card{break-inside:avoid;}
     body{background:#fff;}
   }
+  /* mirrors the print rules above, but applied via JS while html2canvas captures the page for PDF export */
+  body.exporting .paste-panel,
+  body.exporting .footer-actions,
+  body.exporting .header::before,
+  body.exporting .header::after,
+  body.exporting .loc-add,
+  body.exporting .loc-remove,
+  body.exporting .shift-col,
+  body.exporting .date-warning{display:none !important;}
+  body.exporting .header{background:#1B2430 !important;}
+  body.exporting .board{grid-template-columns:1fr !important;}
+  body.exporting .locations-grid{grid-template-columns:1fr 1fr !important;}
 </style>
 </head>
 <body>
@@ -409,6 +421,7 @@
 
   <div class="footer-actions">
     <button class="btn-primary" onclick="window.print()">Print allocation sheet</button>
+    <button id="saveBtn" class="btn-ghost" onclick="saveAsPdf()">Save as PDF</button>
   </div>
 
 </div>
@@ -417,6 +430,8 @@
 <script>
 pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 </script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script>
 const LOCATIONS = ["Shop","Meet & Greet","Corridor","Salon","Library","M Room","Basement"];
 let shifts = [];      // {id, role, start, end, name, status, note}
@@ -852,6 +867,49 @@ function renderLocations(){
     }
     grid.appendChild(card);
   });
+}
+
+async function saveAsPdf(){
+  const btn = document.getElementById('saveBtn');
+  const originalLabel = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Preparing PDF…';
+
+  document.body.classList.add('exporting');
+  try{
+    const target = document.querySelector('.wrap');
+    const canvas = await html2canvas(target, { scale: 2, backgroundColor: '#F3ECDD' });
+    const imgData = canvas.toDataURL('image/png');
+
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const pageWidth = pdf.internal.pageSize.getWidth();
+    const pageHeight = pdf.internal.pageSize.getHeight();
+    const imgWidth = pageWidth;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+    let heightLeft = imgHeight;
+    let position = 0;
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+    while(heightLeft > 0){
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    const dateEl = document.getElementById('metaDate').textContent;
+    const datePart = (dateEl && dateEl !== 'No rota loaded yet')
+      ? dateEl.split(' · ')[0].replace(/\//g, '-')
+      : 'undated';
+    pdf.save('house-of-secrets-allocation-' + datePart + '.pdf');
+  }catch(e){
+    alert('Could not generate the PDF — try Print instead.');
+  }
+  document.body.classList.remove('exporting');
+  btn.disabled = false;
+  btn.textContent = originalLabel;
 }
 
 async function savePlacements(){
