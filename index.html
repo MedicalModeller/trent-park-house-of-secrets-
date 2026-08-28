@@ -213,14 +213,36 @@
     max-height:none;
     display:grid;
     grid-template-columns:1fr 1fr;
-    gap:8px;
-    align-content:start;
+    gap:14px;
+    align-items:start;
   }
-  .pool-list .pool-empty{grid-column:1 / -1;}
-  .pool-list .tile{margin-bottom:0;}
   @media (max-width:480px){
     .pool-list{grid-template-columns:1fr;}
   }
+  .pool-col-heading{
+    font-size:.68rem;
+    font-weight:700;
+    letter-spacing:.06em;
+    text-transform:uppercase;
+    color:#a6803d;
+    margin:0 0 8px;
+    padding-bottom:6px;
+    border-bottom:1px solid #f0e9d8;
+    display:flex;
+    justify-content:space-between;
+    align-items:baseline;
+  }
+  .pool-col-heading .short-count{
+    font-family:-apple-system,sans-serif;
+    text-transform:none;
+    letter-spacing:normal;
+    font-weight:600;
+    font-size:.72rem;
+    color:#8a7f6a;
+  }
+  .pool-col-heading.pool-shortfall .short-count{color:var(--unallocated);}
+  .pool-col-tiles .tile{margin-bottom:8px;}
+  .pool-col-tiles .tile:last-child{margin-bottom:0;}
   .status-dot{
     width:9px;height:9px;border-radius:50%;
     flex-shrink:0;
@@ -435,7 +457,14 @@
       <p class="col-title"><span id="shiftsHeading">Today's shifts</span> <span class="count" id="shiftCount"></span></p>
       <p style="margin:-6px 0 10px; font-size:.78rem; color:#8a7f6a;">Drag a tile onto a location below, or tap a tile then tap a slot.</p>
       <div class="panel pool-list" id="poolList">
-        <p style="color:#a89b7f; font-style:italic; font-size:.85rem; padding:6px;">Paste and parse a rota above to see shifts here.</p>
+        <div class="pool-col" id="poolMorningCol">
+          <p class="pool-col-heading" id="poolMorningHeading">Morning</p>
+          <div class="pool-col-tiles" id="poolMorning"></div>
+        </div>
+        <div class="pool-col" id="poolAfternoonCol">
+          <p class="pool-col-heading" id="poolAfternoonHeading">Afternoon</p>
+          <div class="pool-col-tiles" id="poolAfternoon"></div>
+        </div>
       </div>
     </div>
     <div>
@@ -703,7 +732,6 @@ function clearAll(){
   document.getElementById('metaCount').textContent = '';
   document.getElementById('parseMsg').textContent = '';
   document.getElementById('parseMsg').classList.remove('err');
-  document.getElementById('poolList').innerHTML = '<p style="color:#a89b7f; font-style:italic; font-size:.85rem; padding:6px;">Paste and parse a rota above to see shifts here.</p>';
   document.getElementById('shiftCount').textContent = '';
   document.getElementById('shiftsHeading').textContent = "Today's shifts";
   document.getElementById('dateWarning').style.display = 'none';
@@ -714,6 +742,7 @@ function clearAll(){
   document.getElementById('uploadIcon').innerHTML = uploadIcons.arrow;
   document.getElementById('uploadLabelText').textContent = 'Upload rota PDF';
   document.getElementById('pdfMsg').textContent = '';
+  render();
 }
 
 function statusDotClass(status){
@@ -781,23 +810,44 @@ function render(){
   document.getElementById('shiftCount').textContent = '(' + shifts.length + ')';
   document.getElementById('metaCount').textContent = shifts.length + ' shift' + (shifts.length===1?'':'s') + ' today';
 
-  const poolEl = document.getElementById('poolList');
-  poolEl.innerHTML = '';
   const pool = shifts.filter(s => s.name && !placements[s.id]).sort((a,b) => a.start.localeCompare(b.start));
-  if(!pool.length){
-    const msg = document.createElement('p');
-    msg.className = 'pool-empty';
-    msg.textContent = shifts.length ? 'Everyone\u2019s been placed.' : 'Paste and parse a rota above to see shifts here.';
-    poolEl.appendChild(msg);
-  } else {
-    pool.forEach(s => poolEl.appendChild(buildTile(s, { removable:false })));
-  }
+  const amPool = pool.filter(s => sessionOf(s) === 'Morning');
+  const pmPool = pool.filter(s => sessionOf(s) === 'Afternoon');
+  const needed = LOCATIONS.length; // one person per location is the ideal for each session
+
+  renderPoolColumn('poolMorning', 'poolMorningHeading', 'Morning', amPool, needed);
+  renderPoolColumn('poolAfternoon', 'poolAfternoonHeading', 'Afternoon', pmPool, needed);
 
   renderLocations();
 
   // keep selection valid — if the selected shift got placed/removed by other means, drop it
   if(selectedShiftId && !shifts.some(s => s.id === selectedShiftId)) selectedShiftId = null;
   applySelectionHighlight();
+}
+
+function renderPoolColumn(containerId, headingId, sessionName, group, needed){
+  const container = document.getElementById(containerId);
+  const heading = document.getElementById(headingId);
+  container.innerHTML = '';
+
+  heading.innerHTML = '';
+  const label = document.createElement('span');
+  label.textContent = sessionName;
+  const count = document.createElement('span');
+  count.className = 'short-count';
+  count.textContent = group.length + ' available';
+  heading.appendChild(label);
+  heading.appendChild(count);
+  heading.classList.toggle('pool-shortfall', shifts.length > 0 && group.length < needed);
+
+  if(!group.length){
+    const msg = document.createElement('p');
+    msg.className = 'pool-empty';
+    msg.textContent = shifts.length ? 'None left to place.' : 'Load a rota above.';
+    container.appendChild(msg);
+  } else {
+    group.forEach(s => container.appendChild(buildTile(s, { removable:false })));
+  }
 }
 
 function renderLocations(){
@@ -1007,6 +1057,7 @@ document.addEventListener('DOMContentLoaded', () => {
     assign(selectedShiftId, '');
     selectedShiftId = null;
   });
+  render(); // populates the empty-state placeholders in each pool column on first load
 });
 
 function applySelectionHighlight(){
