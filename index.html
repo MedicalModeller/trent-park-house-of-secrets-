@@ -208,16 +208,19 @@
     color:#8a7f6a;
     font-weight:600;
   }
-  .shift-list{padding:16px; max-height:none;}
-  .shift-row{
+  .pool-list{
+    padding:14px;
+    max-height:none;
     display:grid;
-    grid-template-columns:auto 1fr auto;
-    gap:10px;
-    align-items:center;
-    padding:10px 8px;
-    border-bottom:1px solid #f0e9d8;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    align-content:start;
   }
-  .shift-row:last-child{border-bottom:none;}
+  .pool-list .pool-empty{grid-column:1 / -1;}
+  .pool-list .tile{margin-bottom:0;}
+  @media (max-width:480px){
+    .pool-list{grid-template-columns:1fr;}
+  }
   .status-dot{
     width:9px;height:9px;border-radius:50%;
     flex-shrink:0;
@@ -225,26 +228,70 @@
   .dot-confirmed{background:var(--confirmed);}
   .dot-reminded{background:var(--reminded);}
   .dot-unallocated{background:var(--unallocated); border:1px solid var(--unallocated);}
-  .shift-info{min-width:0;}
-  .shift-name{font-weight:600; font-size:.9rem; color:var(--ink-text);}
-  .shift-name.empty{color:#a89b7f; font-style:italic; font-weight:500;}
-  .shift-sub{font-size:.76rem; color:#8a7f6a; margin-top:1px;}
-  .shift-note{font-size:.74rem; color:#a6825a; margin-top:2px; font-style:italic;}
-  select.loc-select{
-    font-family:inherit;
-    font-size:.8rem;
-    padding:6px 8px;
-    border-radius:6px;
+
+  .tile{
+    display:flex;
+    align-items:flex-start;
+    gap:8px;
+    background:#fff;
     border:1px solid #d8cdb3;
-    background:#fdfbf5;
-    color:var(--ink-text);
-    min-width:132px;
+    border-radius:8px;
+    padding:8px 10px;
+    margin-bottom:8px;
+    cursor:grab;
+    touch-action:none;
+    user-select:none;
+    box-shadow:0 1px 2px rgba(27,36,48,.05);
+    transition:box-shadow .12s, border-color .12s, opacity .12s;
   }
-  select.loc-select.placed{
-    border-color:var(--brass);
-    background:#fbf4e2;
-    font-weight:600;
+  .tile:last-child{margin-bottom:0;}
+  .tile:active{cursor:grabbing;}
+  .tile.selected{border-color:var(--brass); box-shadow:0 0 0 2px var(--brass-light);}
+  .tile.dragging-source{opacity:.3;}
+  .tile-info{min-width:0; flex:1;}
+  .tile-name{font-weight:600; font-size:.87rem; color:var(--ink-text);}
+  .tile-name.empty{color:#a89b7f; font-style:italic; font-weight:500;}
+  .tile-sub{font-size:.74rem; color:#8a7f6a; margin-top:1px;}
+  .tile-note{font-size:.72rem; color:#a6825a; margin-top:2px; font-style:italic;}
+  .tile-remove{
+    background:transparent; border:none; color:#b0a488;
+    font-size:1rem; line-height:1; padding:0 2px; flex-shrink:0; cursor:pointer;
   }
+  .tile-remove:hover{color:var(--unallocated);}
+
+  .tile.tile-compact{
+    align-items:center;
+    gap:6px;
+    padding:4px 8px;
+    margin-bottom:5px;
+  }
+  .tile.tile-compact:last-child{margin-bottom:0;}
+  .tile.tile-compact .tile-info{display:flex; align-items:baseline; gap:6px; overflow:hidden;}
+  .tile.tile-compact .tile-name{font-size:.78rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .tile.tile-compact .tile-sub{font-size:.7rem; margin-top:0; white-space:nowrap; flex-shrink:0;}
+  .tile.tile-compact .status-dot{width:7px; height:7px;}
+  .tile.tile-compact .tile-remove{font-size:.9rem;}
+
+  .tile-ghost{
+    position:fixed;
+    z-index:1000;
+    pointer-events:none;
+    opacity:.92;
+    transform:rotate(-1.5deg);
+    box-shadow:0 8px 20px rgba(27,36,48,.28);
+    width:220px;
+  }
+  .drop-zone{
+    min-height:32px;
+    border:1.5px dashed #d8cdb3;
+    border-radius:8px;
+    padding:4px;
+    transition:background .12s, border-color .12s;
+  }
+  .drop-zone.drag-over{background:#fbf4e2; border-color:var(--brass);}
+  .drop-zone.invalid-drop{background:#f6dede; border-color:var(--unallocated);}
+  .drop-zone-empty{font-size:.72rem; color:#b0a488; font-style:italic; padding:4px 2px; text-align:center;}
+  .pool-empty{font-size:.82rem; color:#b0a488; font-style:italic; padding:6px;}
   .locations-grid{
     display:grid;
     grid-template-columns:1fr 1fr;
@@ -296,40 +343,6 @@
     text-transform:uppercase;
     color:#a6803d;
   }
-  .loc-add{margin-top:8px;}
-  select.loc-add-select{
-    width:100%;
-    font-family:inherit;
-    font-size:.8rem;
-    padding:7px 8px;
-    border-radius:6px;
-    border:1px dashed #c7b78a;
-    background:#fdfbf5;
-    color:var(--ink-text);
-  }
-  select.loc-add-select:disabled{color:#b0a488; border-style:solid; background:#f7f2e6;}
-  .loc-person{
-    font-size:.83rem;
-    margin-bottom:7px;
-    line-height:1.35;
-    display:flex;
-    align-items:flex-start;
-    justify-content:space-between;
-    gap:8px;
-  }
-  .loc-person b{color:var(--ink-text);}
-  .loc-person span{color:#8a7f6a; font-size:.76rem;}
-  .loc-remove{
-    background:transparent;
-    border:none;
-    color:#b0a488;
-    font-size:1rem;
-    line-height:1;
-    padding:0 2px;
-    font-weight:400;
-    flex-shrink:0;
-  }
-  .loc-remove:hover{color:var(--unallocated);}
   .footer-actions{
     margin-top:24px;
     display:flex;
@@ -338,7 +351,7 @@
   @page{ size: A4; margin: 8mm; }
   @media print{
     :root{font-size:10.5px;}
-    .paste-panel, .footer-actions, .header::before, .header::after, .loc-add, .loc-remove, .shift-col, .date-warning{display:none;}
+    .paste-panel, .footer-actions, .header::before, .header::after, .tile-remove, .drop-zone-empty, .shift-col, .date-warning{display:none;}
     .header{background:#fff !important; color:#000 !important; border-bottom:2px solid #000; padding:6px 4px 8px !important;}
     .eyebrow, h1, .meta{color:#000 !important;}
     .wrap{padding:6px 4px !important; max-width:none;}
@@ -349,7 +362,9 @@
     .loc-name{margin:0 0 5px; padding-bottom:4px;}
     .loc-session{padding:5px 0 6px;}
     .loc-session-header{margin-bottom:4px;}
-    .loc-person{margin-bottom:4px; line-height:1.2;}
+    .drop-zone{border:none; padding:0; min-height:0;}
+    .tile{padding:4px 6px; margin-bottom:3px; box-shadow:none;}
+    .tile-sub{font-size:.68rem;}
     .cov-badge{padding:2px 6px;}
     body{background:#fff;}
   }
@@ -358,8 +373,8 @@
   body.exporting .footer-actions,
   body.exporting .header::before,
   body.exporting .header::after,
-  body.exporting .loc-add,
-  body.exporting .loc-remove,
+  body.exporting .tile-remove,
+  body.exporting .drop-zone-empty,
   body.exporting .shift-col,
   body.exporting .date-warning{display:none !important;}
   body.exporting .header{background:#1B2430 !important;}
@@ -418,7 +433,8 @@
   <div class="board">
     <div class="shift-col">
       <p class="col-title"><span id="shiftsHeading">Today's shifts</span> <span class="count" id="shiftCount"></span></p>
-      <div class="panel shift-list" id="shiftList">
+      <p style="margin:-6px 0 10px; font-size:.78rem; color:#8a7f6a;">Drag a tile onto a location below, or tap a tile then tap a slot.</p>
+      <div class="panel pool-list" id="poolList">
         <p style="color:#a89b7f; font-style:italic; font-size:.85rem; padding:6px;">Paste and parse a rota above to see shifts here.</p>
       </div>
     </div>
@@ -682,11 +698,12 @@ function clearAll(){
   document.getElementById('pasteBox').value = '';
   shifts = [];
   placements = {};
+  selectedShiftId = null;
   document.getElementById('metaDate').textContent = 'No rota loaded yet';
   document.getElementById('metaCount').textContent = '';
   document.getElementById('parseMsg').textContent = '';
   document.getElementById('parseMsg').classList.remove('err');
-  document.getElementById('shiftList').innerHTML = '<p style="color:#a89b7f; font-style:italic; font-size:.85rem; padding:6px;">Paste and parse a rota above to see shifts here.</p>';
+  document.getElementById('poolList').innerHTML = '<p style="color:#a89b7f; font-style:italic; font-size:.85rem; padding:6px;">Paste and parse a rota above to see shifts here.</p>';
   document.getElementById('shiftCount').textContent = '';
   document.getElementById('shiftsHeading').textContent = "Today's shifts";
   document.getElementById('dateWarning').style.display = 'none';
@@ -715,62 +732,72 @@ function assign(shiftId, loc){
   savePlacements();
 }
 
+// ---- tile building helpers ----
+function buildTile(s, opts){
+  opts = opts || {};
+  const tile = document.createElement('div');
+  tile.className = 'tile' + (opts.compact ? ' tile-compact' : '');
+  tile.dataset.shiftId = s.id;
+
+  const dot = document.createElement('div');
+  dot.className = 'status-dot ' + statusDotClass(s.status);
+  if(!opts.compact) dot.style.marginTop = '4px';
+
+  const info = document.createElement('div');
+  info.className = 'tile-info';
+  const nameEl = document.createElement('div');
+  nameEl.className = 'tile-name' + (s.name ? '' : ' empty');
+  nameEl.textContent = s.name || 'Unfilled';
+  const sub = document.createElement('div');
+  sub.className = 'tile-sub';
+  sub.textContent = opts.compact ? (s.start + '–' + s.end) : (s.role + ' · ' + s.start + '–' + s.end);
+  info.appendChild(nameEl);
+  info.appendChild(sub);
+  if(s.note && !opts.compact){
+    const noteEl = document.createElement('div');
+    noteEl.className = 'tile-note';
+    noteEl.textContent = s.note;
+    info.appendChild(noteEl);
+  }
+
+  tile.appendChild(dot);
+  tile.appendChild(info);
+
+  if(opts.removable){
+    const remove = document.createElement('button');
+    remove.className = 'tile-remove';
+    remove.type = 'button';
+    remove.title = 'Send back to available';
+    remove.textContent = '×';
+    remove.addEventListener('click', (e) => { e.stopPropagation(); assign(s.id, ''); });
+    tile.appendChild(remove);
+  }
+
+  attachDragHandlers(tile, s);
+  return tile;
+}
+
 function render(){
   document.getElementById('shiftCount').textContent = '(' + shifts.length + ')';
   document.getElementById('metaCount').textContent = shifts.length + ' shift' + (shifts.length===1?'':'s') + ' today';
 
-  const listEl = document.getElementById('shiftList');
-  listEl.innerHTML = '';
-  shifts.forEach(s => {
-    const row = document.createElement('div');
-    row.className = 'shift-row';
-
-    const dot = document.createElement('div');
-    dot.className = 'status-dot ' + statusDotClass(s.status);
-
-    const info = document.createElement('div');
-    info.className = 'shift-info';
-    const nameEl = document.createElement('div');
-    nameEl.className = 'shift-name' + (s.name ? '' : ' empty');
-    nameEl.textContent = s.name || 'Unfilled';
-    const sub = document.createElement('div');
-    sub.className = 'shift-sub';
-    sub.textContent = s.role + ' · ' + s.start + '–' + s.end + ' · ' + s.status;
-    info.appendChild(nameEl);
-    info.appendChild(sub);
-    if(s.note){
-      const noteEl = document.createElement('div');
-      noteEl.className = 'shift-note';
-      noteEl.textContent = s.note;
-      info.appendChild(noteEl);
-    }
-
-    const sel = document.createElement('select');
-    sel.className = 'loc-select';
-    const optNone = document.createElement('option');
-    optNone.value = '';
-    optNone.textContent = 'Unplaced';
-    sel.appendChild(optNone);
-    LOCATIONS.forEach(loc => {
-      const opt = document.createElement('option');
-      opt.value = loc;
-      opt.textContent = loc;
-      if(placements[s.id] === loc) opt.selected = true;
-      sel.appendChild(opt);
-    });
-    if(placements[s.id]) sel.classList.add('placed');
-    sel.addEventListener('change', () => {
-      sel.classList.toggle('placed', !!sel.value);
-      assign(s.id, sel.value);
-    });
-
-    row.appendChild(dot);
-    row.appendChild(info);
-    row.appendChild(sel);
-    listEl.appendChild(row);
-  });
+  const poolEl = document.getElementById('poolList');
+  poolEl.innerHTML = '';
+  const pool = shifts.filter(s => s.name && !placements[s.id]).sort((a,b) => a.start.localeCompare(b.start));
+  if(!pool.length){
+    const msg = document.createElement('p');
+    msg.className = 'pool-empty';
+    msg.textContent = shifts.length ? 'Everyone\u2019s been placed.' : 'Paste and parse a rota above to see shifts here.';
+    poolEl.appendChild(msg);
+  } else {
+    pool.forEach(s => poolEl.appendChild(buildTile(s, { removable:false })));
+  }
 
   renderLocations();
+
+  // keep selection valid — if the selected shift got placed/removed by other means, drop it
+  if(selectedShiftId && !shifts.some(s => s.id === selectedShiftId)) selectedShiftId = null;
+  applySelectionHighlight();
 }
 
 function renderLocations(){
@@ -794,17 +821,8 @@ function renderLocations(){
     title.appendChild(n);
     card.appendChild(title);
 
-    // coverage badges — has this location got someone in each session?
-    const amPeople = people.filter(p => sessionOf(p) === 'Morning');
-    const pmPeople = people.filter(p => sessionOf(p) === 'Afternoon');
-
-    // one add-dropdown per session, filtered to shifts that are still unallocated
-    // and genuinely overlap that session — once someone's placed anywhere, they
-    // drop out of every location's dropdown (use the shift-list select on the
-    // left, or the × next to their name, to move or unassign them)
-    const availableFor = (sessionName) => shifts
-      .filter(s => s.name && onSiteFor(s, sessionName) && !placements[s.id])
-      .sort((a,b) => a.start.localeCompare(b.start));
+    const amPeople = people.filter(p => sessionOf(p) === 'Morning').sort((a,b) => a.start.localeCompare(b.start));
+    const pmPeople = people.filter(p => sessionOf(p) === 'Afternoon').sort((a,b) => a.start.localeCompare(b.start));
 
     [['Morning','AM',amPeople], ['Afternoon','PM',pmPeople]].forEach(([sessionName, shortLabel, group]) => {
       const sessionBlock = document.createElement('div');
@@ -822,61 +840,181 @@ function renderLocations(){
       sh.appendChild(badge);
       sessionBlock.appendChild(sh);
 
-      // people already placed in this session
-      group.sort((a,b) => a.start.localeCompare(b.start));
-      group.forEach(p => {
-        const row = document.createElement('div');
-        row.className = 'loc-person';
-        const info = document.createElement('div');
-        info.innerHTML = '<b>' + (p.name || 'Unfilled') + '</b><br><span>' + p.start + '–' + p.end + ' · ' + p.role + '</span>';
-        const remove = document.createElement('button');
-        remove.className = 'loc-remove';
-        remove.type = 'button';
-        remove.title = 'Remove from ' + loc;
-        remove.textContent = '×';
-        remove.addEventListener('click', () => assign(p.id, ''));
-        row.appendChild(info);
-        row.appendChild(remove);
-        sessionBlock.appendChild(row);
-      });
+      const zone = document.createElement('div');
+      zone.className = 'drop-zone';
+      zone.dataset.loc = loc;
+      zone.dataset.session = sessionName;
 
-      // this session's own add-dropdown
-      const addWrap = document.createElement('div');
-      addWrap.className = 'loc-add';
-      const addSel = document.createElement('select');
-      addSel.className = 'loc-add-select';
-      const placeholder = document.createElement('option');
-      placeholder.value = '';
-      placeholder.textContent = '+ Add ' + shortLabel + ' someone…';
-      addSel.appendChild(placeholder);
-      const avail = availableFor(sessionName);
-      avail.forEach(s => {
-        const opt = document.createElement('option');
-        opt.value = s.id;
-        opt.textContent = s.name + ' · ' + s.start + '–' + s.end + ' · ' + s.role;
-        addSel.appendChild(opt);
-      });
-      addSel.disabled = !avail.length;
-      if(!avail.length) placeholder.textContent = 'Everyone ' + shortLabel + ' allocated already';
-      addSel.addEventListener('change', () => {
-        if(addSel.value) assign(addSel.value, loc);
-      });
-      addWrap.appendChild(addSel);
-      sessionBlock.appendChild(addWrap);
+      if(!group.length){
+        const empty = document.createElement('p');
+        empty.className = 'drop-zone-empty';
+        empty.textContent = 'Drop ' + shortLabel + ' person here';
+        zone.appendChild(empty);
+      } else {
+        group.forEach(p => zone.appendChild(buildTile(p, { removable:true, compact:true })));
+      }
 
+      attachZoneTapHandler(zone);
+      sessionBlock.appendChild(zone);
       card.appendChild(sessionBlock);
     });
 
-    if(!people.length){
-      const empty = document.createElement('p');
-      empty.className = 'loc-empty';
-      empty.style.marginTop = '2px';
-      empty.textContent = 'Nobody placed here yet.';
-      card.appendChild(empty);
-    }
     grid.appendChild(card);
   });
 }
+
+// ---- drag + tap-to-place engine ----
+// Works with mouse, touch and pen via the Pointer Events API. A short
+// movement is treated as a tap (select, then tap a slot to place); a longer
+// movement starts an actual drag with a floating tile that follows the pointer.
+let selectedShiftId = null;
+let dragState = null; // { shift, ghost, startX, startY, moved, pointerId }
+
+function attachDragHandlers(tile, shift){
+  tile.addEventListener('pointerdown', (e) => {
+    if(e.button !== undefined && e.button !== 0) return;
+    dragState = { shift, ghost:null, startX:e.clientX, startY:e.clientY, moved:false, pointerId:e.pointerId, sourceTile:tile };
+    tile.setPointerCapture(e.pointerId);
+  });
+  tile.addEventListener('pointermove', (e) => {
+    if(!dragState || dragState.pointerId !== e.pointerId) return;
+    const dx = e.clientX - dragState.startX, dy = e.clientY - dragState.startY;
+    if(!dragState.moved && Math.hypot(dx,dy) > 8){
+      dragState.moved = true;
+      startGhost(dragState, tile);
+    }
+    if(dragState.moved){
+      moveGhost(dragState, e.clientX, e.clientY);
+      updateHoverTarget(e.clientX, e.clientY, dragState.shift);
+    }
+  });
+  tile.addEventListener('pointerup', (e) => {
+    if(!dragState || dragState.pointerId !== e.pointerId) return;
+    const wasDrag = dragState.moved;
+    const shiftRef = dragState.shift;
+    if(wasDrag){
+      finishDrag(e.clientX, e.clientY, shiftRef);
+    } else {
+      handleTileTap(shiftRef);
+    }
+    cleanupDrag();
+  });
+  tile.addEventListener('pointercancel', () => { cleanupDrag(); });
+}
+
+function startGhost(state, tile){
+  tile.classList.add('dragging-source');
+  const rect = tile.getBoundingClientRect();
+  const ghost = tile.cloneNode(true);
+  ghost.className = 'tile tile-ghost';
+  ghost.style.width = rect.width + 'px';
+  ghost.style.left = rect.left + 'px';
+  ghost.style.top = rect.top + 'px';
+  document.body.appendChild(ghost);
+  state.ghost = ghost;
+  state.offsetX = state.startX - rect.left;
+  state.offsetY = state.startY - rect.top;
+}
+
+function moveGhost(state, x, y){
+  if(!state.ghost) return;
+  state.ghost.style.left = (x - state.offsetX) + 'px';
+  state.ghost.style.top = (y - state.offsetY) + 'px';
+}
+
+function clearZoneHighlights(){
+  document.querySelectorAll('.drop-zone.drag-over, .drop-zone.invalid-drop')
+    .forEach(z => z.classList.remove('drag-over','invalid-drop'));
+}
+
+function zoneUnderPoint(x, y){
+  if(dragState && dragState.ghost) dragState.ghost.style.display = 'none';
+  const el = document.elementFromPoint(x, y);
+  if(dragState && dragState.ghost) dragState.ghost.style.display = '';
+  return el ? el.closest('.drop-zone') : null;
+}
+
+function poolUnderPoint(x, y){
+  if(dragState && dragState.ghost) dragState.ghost.style.display = 'none';
+  const el = document.elementFromPoint(x, y);
+  if(dragState && dragState.ghost) dragState.ghost.style.display = '';
+  return el ? el.closest('#poolList') : null;
+}
+
+function updateHoverTarget(x, y, shift){
+  clearZoneHighlights();
+  const zone = zoneUnderPoint(x, y);
+  if(zone){
+    const eligible = onSiteFor(shift, zone.dataset.session);
+    zone.classList.add(eligible ? 'drag-over' : 'invalid-drop');
+  }
+}
+
+function finishDrag(x, y, shift){
+  const zone = zoneUnderPoint(x, y);
+  if(zone){
+    if(onSiteFor(shift, zone.dataset.session)){
+      assign(shift.id, zone.dataset.loc);
+      return;
+    }
+  } else if(poolUnderPoint(x, y)){
+    assign(shift.id, '');
+    return;
+  }
+  render(); // no valid target — snap back
+}
+
+function cleanupDrag(){
+  if(dragState && dragState.sourceTile) dragState.sourceTile.classList.remove('dragging-source');
+  if(dragState && dragState.ghost) dragState.ghost.remove();
+  clearZoneHighlights();
+  dragState = null;
+}
+
+function handleTileTap(shift){
+  if(selectedShiftId === shift.id){
+    selectedShiftId = null; // tapped the same tile again — deselect
+  } else if(!selectedShiftId){
+    selectedShiftId = shift.id; // nothing selected yet — select this one
+  } else {
+    // something else already selected — this tap targets a tile, not a zone;
+    // treat it as picking a new selection instead
+    selectedShiftId = shift.id;
+  }
+  applySelectionHighlight();
+}
+
+function attachZoneTapHandler(zone){
+  zone.addEventListener('click', () => {
+    if(!selectedShiftId) return;
+    const shift = shifts.find(s => s.id === selectedShiftId);
+    if(!shift) { selectedShiftId = null; return; }
+    if(onSiteFor(shift, zone.dataset.session)){
+      selectedShiftId = null;
+      assign(shift.id, zone.dataset.loc);
+    } else {
+      zone.classList.add('invalid-drop');
+      setTimeout(() => zone.classList.remove('invalid-drop'), 500);
+    }
+  });
+}
+
+// tapping the pool area while something's selected sends it back to available
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('poolList').addEventListener('click', (e) => {
+    if(!selectedShiftId) return;
+    if(e.target.closest('.tile')) return; // tapping another tile is handled by its own handler
+    assign(selectedShiftId, '');
+    selectedShiftId = null;
+  });
+});
+
+function applySelectionHighlight(){
+  document.querySelectorAll('.tile').forEach(t => {
+    t.classList.toggle('selected', t.dataset.shiftId === selectedShiftId);
+  });
+}
+
 
 async function saveAsPdf(){
   const btn = document.getElementById('saveBtn');
