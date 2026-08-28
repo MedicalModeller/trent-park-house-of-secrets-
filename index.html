@@ -335,13 +335,22 @@
     display:flex;
     gap:10px;
   }
+  @page{ size: A4; margin: 8mm; }
   @media print{
+    :root{font-size:10.5px;}
     .paste-panel, .footer-actions, .header::before, .header::after, .loc-add, .loc-remove, .shift-col, .date-warning{display:none;}
-    .header{background:#fff !important; color:#000 !important; border-bottom:2px solid #000;}
+    .header{background:#fff !important; color:#000 !important; border-bottom:2px solid #000; padding:6px 4px 8px !important;}
     .eyebrow, h1, .meta{color:#000 !important;}
-    .board{grid-template-columns:1fr;}
-    .locations-grid{grid-template-columns:1fr 1fr;}
-    .loc-card{break-inside:avoid;}
+    .wrap{padding:6px 4px !important; max-width:none;}
+    .board{grid-template-columns:1fr; gap:0;}
+    .col-title{display:none;}
+    .locations-grid{grid-template-columns:repeat(4, 1fr); gap:6px;}
+    .loc-card{break-inside:avoid; padding:7px 8px 8px;}
+    .loc-name{margin:0 0 5px; padding-bottom:4px;}
+    .loc-session{padding:5px 0 6px;}
+    .loc-session-header{margin-bottom:4px;}
+    .loc-person{margin-bottom:4px; line-height:1.2;}
+    .cov-badge{padding:2px 6px;}
     body{background:#fff;}
   }
   /* mirrors the print rules above, but applied via JS while html2canvas captures the page for PDF export */
